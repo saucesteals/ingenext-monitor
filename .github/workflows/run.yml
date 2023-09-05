@@ -24,7 +24,7 @@ jobs:
           go-version: "1.20"
 
       - name: Run
-        run: go run .
+        run: go run ./cmd/cron
         env:
           CRON: 1
           VERSIONS_CACHE_PATH: ingenext_cache.json

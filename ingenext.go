@@ -1,11 +1,17 @@
-package main
+package ingenext
 
 import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/disgoorg/disgo/discord"
+)
+
+var (
+	urlUpdates = "https://ingenext.ca/pages/safe-tesla-updates-for-boost50-and-bonus-module"
 )
 
 type VersionHistory map[string][]string
@@ -14,7 +20,7 @@ func normalize(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-func getVersions() (VersionHistory, error) {
+func GetVersions() (VersionHistory, error) {
 	res, err := http.Get(urlUpdates)
 	if err != nil {
 		return nil, err
@@ -60,7 +66,7 @@ func getVersions() (VersionHistory, error) {
 	return versions, nil
 }
 
-func findUpdates(cached, latest []string) (added, removed []string) {
+func VersionsDiff(cached, latest []string) (added, removed []string) {
 	c := map[string]struct{}{}
 
 	for _, ver := range cached {
@@ -82,4 +88,29 @@ func findUpdates(cached, latest []string) (added, removed []string) {
 	}
 
 	return
+}
+
+func CreateEmbed(title string, added, removed []string) discord.Embed {
+	description := "New Changes:\n```diff"
+	for _, ver := range added {
+		description += fmt.Sprintf("\n+ %s", ver)
+	}
+	for _, ver := range removed {
+		description += fmt.Sprintf("\n- %s", ver)
+	}
+	description += "```"
+
+	now := time.Now()
+
+	return discord.Embed{
+		Title:       title,
+		URL:         urlUpdates,
+		Description: description,
+		Timestamp:   &now,
+		Color:       0xf84248,
+		Footer: &discord.EmbedFooter{
+			Text:    "Ingenext Monitor",
+			IconURL: "https://i.imgur.com/nJVc4DZ.jpg",
+		},
+	}
 }
