@@ -80,7 +80,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	if diskCachePath != "" {
+	if isCron {
 		versions, err := getDiskCache()
 		if err != nil {
 			log.Panic(err)
