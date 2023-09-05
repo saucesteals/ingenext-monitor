@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,7 @@ var (
 	cache      VersionHistory
 	hook       webhook.Client
 	delay      = time.Minute * 5
+	isCron     = os.Getenv("CRON") == "1"
 )
 
 func sendWebhook(title string, added, removed []string) error {
@@ -45,6 +47,22 @@ func sendWebhook(title string, added, removed []string) error {
 	return err
 }
 
+func getDiskCache(path string) (VersionHistory, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	var versions VersionHistory
+	if err := json.NewDecoder(f).Decode(versions); err != nil {
+		return nil, err
+	}
+
+	return versions, nil
+}
+
 func main() {
 	var err error
 	hook, err = webhook.NewWithURL(os.Getenv("WEBHOOK_URL"))
@@ -52,12 +70,21 @@ func main() {
 		log.Panic(err)
 	}
 
-	versions, err := getVersions()
-	if err != nil {
-		log.Panic(err)
-	}
+	if diskCachePath := os.Getenv("VERSIONS_CACHE_PATH"); diskCachePath != "" {
+		versions, err := getDiskCache(diskCachePath)
+		if err != nil {
+			log.Panic(err)
+		}
 
-	cache = versions
+		cache = versions
+	} else {
+		versions, err := getVersions()
+		if err != nil {
+			log.Panic(err)
+		}
+
+		cache = versions
+	}
 
 	// just as a confirmation for first attempt
 	for v := range cache {
@@ -65,8 +92,11 @@ func main() {
 	}
 
 	for {
-		versions, err = getVersions()
+		versions, err := getVersions()
 		if err != nil {
+			if isCron {
+				log.Panic(err)
+			}
 			log.Printf("failed to get latest versions: %s", err)
 			time.Sleep(time.Second * 10) // retry delay
 			continue
@@ -80,9 +110,16 @@ func main() {
 			}
 
 			if err := sendWebhook(title, added, removed); err != nil {
+				if isCron {
+					log.Panic(err)
+				}
 				log.Printf("failed to send webhook for %s: %s", title, err)
 				continue
 			}
+		}
+
+		if isCron {
+			return
 		}
 
 		cache = versions
