@@ -28,3 +28,4 @@ jobs:
         env:
           CRON: 1
           VERSIONS_CACHE_PATH: ~/ingenext_cache.json
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
