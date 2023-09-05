@@ -70,7 +70,7 @@ func getOrInitDiskCache() (VersionHistory, error) {
 }
 
 func writeDiskCache(versions VersionHistory) error {
-	f, err := os.OpenFile(diskCachePath, os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(diskCachePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
