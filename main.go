@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	urlUpdates = "https://ingenext.ca/pages/safe-tesla-updates-for-boost50-and-bonus-module"
-	cache      VersionHistory
-	hook       webhook.Client
-	delay      = time.Minute * 5
-	isCron     = os.Getenv("CRON") == "1"
+	urlUpdates    = "https://ingenext.ca/pages/safe-tesla-updates-for-boost50-and-bonus-module"
+	cache         VersionHistory
+	hook          webhook.Client
+	delay         = time.Minute * 5
+	isCron        = os.Getenv("CRON") == "1"
+	diskCachePath = os.Getenv("VERSIONS_CACHE_PATH")
 )
 
 func sendWebhook(title string, added, removed []string) error {
@@ -47,8 +48,8 @@ func sendWebhook(title string, added, removed []string) error {
 	return err
 }
 
-func getDiskCache(path string) (VersionHistory, error) {
-	f, err := os.Open(path)
+func getDiskCache() (VersionHistory, error) {
+	f, err := os.Open(diskCachePath)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +57,20 @@ func getDiskCache(path string) (VersionHistory, error) {
 	defer f.Close()
 
 	var versions VersionHistory
-	if err := json.NewDecoder(f).Decode(versions); err != nil {
+	if err := json.NewDecoder(f).Decode(&versions); err != nil {
 		return nil, err
 	}
 
 	return versions, nil
+}
+
+func writeDiskCache(versions VersionHistory) error {
+	data, err := json.Marshal(versions)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(diskCachePath, data, 0644)
 }
 
 func main() {
@@ -70,8 +80,8 @@ func main() {
 		log.Panic(err)
 	}
 
-	if diskCachePath := os.Getenv("VERSIONS_CACHE_PATH"); diskCachePath != "" {
-		versions, err := getDiskCache(diskCachePath)
+	if diskCachePath != "" {
+		versions, err := getDiskCache()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -119,6 +129,10 @@ func main() {
 		}
 
 		if isCron {
+			err := writeDiskCache(versions)
+			if err != nil {
+				log.Panic(err)
+			}
 			return
 		}
 
