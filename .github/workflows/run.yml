@@ -17,8 +17,7 @@ jobs:
         with:
           path: ingenext_cache.json
           key: ingenext-versions-${{ github.run_id }}
-          restore-keys: |
-            ingenext-versions
+          restore-keys: ingenext-versions
 
       - name: Set up Go
         uses: actions/setup-go@v4
