@@ -84,11 +84,11 @@ func main() {
 		}
 
 		cache = versions
-	}
 
-	// just as a confirmation for first attempt
-	for v := range cache {
-		cache[v] = cache[v][1:]
+		// just as a confirmation for first attempt
+		for v := range cache {
+			cache[v] = cache[v][1:]
+		}
 	}
 
 	for {
