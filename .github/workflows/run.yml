@@ -1,0 +1,30 @@
+name: Check for version updates
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache versions
+        uses: actions/cache@v3
+        with:
+          key: ingenext-versions
+          path: ~/ingenext_cache.json
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+
+      - name: Run
+        run: go run .
+        env:
+          CRON: 1
+          VERSIONS_CACHE_PATH: ~/ingenext_cache.json

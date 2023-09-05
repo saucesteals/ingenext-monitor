@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -48,9 +49,13 @@ func sendWebhook(title string, added, removed []string) error {
 	return err
 }
 
-func getDiskCache() (VersionHistory, error) {
+func getOrInitDiskCache() (VersionHistory, error) {
 	f, err := os.Open(diskCachePath)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Println("WARNING: Disk cache does not exist")
+			return getVersions()
+		}
 		return nil, err
 	}
 
@@ -65,12 +70,14 @@ func getDiskCache() (VersionHistory, error) {
 }
 
 func writeDiskCache(versions VersionHistory) error {
-	data, err := json.Marshal(versions)
+	f, err := os.OpenFile(diskCachePath, os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(diskCachePath, data, 0644)
+	defer f.Close()
+
+	return json.NewEncoder(f).Encode(versions)
 }
 
 func main() {
@@ -81,7 +88,7 @@ func main() {
 	}
 
 	if isCron {
-		versions, err := getDiskCache()
+		versions, err := getOrInitDiskCache()
 		if err != nil {
 			log.Panic(err)
 		}
