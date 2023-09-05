@@ -54,7 +54,7 @@ func main() {
 
 		_, err = hook.CreateEmbeds([]discord.Embed{ingenext.CreateEmbed(title, added, removed)})
 		if err != nil {
-			log.Panic("failed to send webhook for %s: %s", title, err)
+			log.Panicf("failed to send webhook for %s: %s", title, err)
 		}
 	}
 
@@ -62,8 +62,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	return
-
 }
 
 func getDiskCache() (ingenext.VersionHistory, error) {

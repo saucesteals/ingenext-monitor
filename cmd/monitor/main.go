@@ -29,6 +29,7 @@ func main() {
 	}
 
 	for {
+		log.Println("Getting latest versions")
 		versions, err := ingenext.GetVersions()
 		if err != nil {
 			log.Printf("failed to get latest versions: %s", err)
@@ -40,6 +41,7 @@ func main() {
 			added, removed := ingenext.VersionsDiff(cache[title], versions)
 
 			if len(added) == 0 && len(removed) == 0 {
+				log.Printf("No changes in %s", title)
 				continue
 			}
 
@@ -48,6 +50,7 @@ func main() {
 				log.Printf("failed to send webhook for %s: %s", title, err)
 				continue
 			}
+			log.Printf("Sent webhook for %s", title)
 		}
 
 		cache = versions
